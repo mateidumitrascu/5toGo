@@ -1,2 +1,8 @@
+#Environment
+.env
+
 # Personal notes
 notes
+
+# Database, other app data
+data

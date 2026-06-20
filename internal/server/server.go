@@ -15,24 +15,6 @@ var (
 func NewMux(sd *ServerData) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	// mux.HandleFunc("GET /hello", func(w http.ResponseWriter, r *http.Request) {
-	// 	fmt.Printf("Hello from %v\n", r)
-	// 	_, err := fmt.Fprintln(w, "Your hello request was received")
-	// 	if err != nil {
-	// 		fmt.Printf("Error responding to client: %+v\n", err)
-	// 	}
-	// })
-	//
-	// mux.HandleFunc("GET /shut", func(w http.ResponseWriter, r *http.Request) {
-	// 	fmt.Println("Received request, waiting")
-	// 	time.Sleep(3 * time.Second)
-	//
-	// 	_, err := fmt.Fprintln(w, "Shutdown test request processed")
-	// 	if err != nil {
-	// 		fmt.Printf("Error responding to client: %+v\n", err)
-	// 	}
-	// })
-
 	mux.HandleFunc("GET /health", sd.serverHealthHandler)
 
 	return mux

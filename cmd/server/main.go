@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/5fives-to-go/internal/database"
 	"github.com/5fives-to-go/internal/server"
 )
 
@@ -22,6 +23,10 @@ func main() {
 			fmt.Printf("Error listening and serving: %v\n", err)
 		}
 	}()
+
+	fmt.Println("Testing db connection")
+	database.GetDatabasConnection()
+	fmt.Println("Database connection successful")
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)

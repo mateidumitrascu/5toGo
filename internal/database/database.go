@@ -10,15 +10,16 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func GetDatabasConnection() *sql.DB {
+var MaxOpenCons = 5
+
+func GetDatabaseConnection() (*sql.DB, error) {
 	db, err := sql.Open("sqlite", os.Getenv("DB_PATH"))
 	if err != nil {
-		fmt.Printf("Error opening database: %v\n", err)
+		return nil, fmt.Errorf("open database: %w", err)
 	}
 	if err := db.Ping(); err != nil {
-		fmt.Printf("Error connecting to database: %v\n", err)
-		return nil
+		return nil, fmt.Errorf("ping database: %w", err)
 	}
-
-	return db
+	db.SetMaxOpenConns(MaxOpenCons)
+	return db, nil
 }

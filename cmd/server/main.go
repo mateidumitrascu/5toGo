@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,7 +26,11 @@ func main() {
 	}()
 
 	fmt.Println("Testing db connection")
-	database.GetDatabasConnection()
+	db, err := database.GetDatabaseConnection()
+	if err != nil {
+		log.Fatalf("database connection failed: %v", err)
+	}
+	defer db.Close()
 	fmt.Println("Database connection successful")
 
 	signalChan := make(chan os.Signal, 1)

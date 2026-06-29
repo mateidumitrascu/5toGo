@@ -16,10 +16,10 @@ type User struct {
 
 type UserRepo interface {
 	Create(u *User) (*User, error)
-	Update(u *User) (*User, error)
-	FindById(uid int64) (*User, error)
-	// TODO: check if it's better to actually return the user after deleting
-	Delete(uid int64) error
+	// Update(u *User) (*User, error)
+	// FindById(uid int64) (*User, error)
+	// // TODO: check if it's better to actually return the user after deleting
+	// Delete(uid int64) error
 
 	// entity specific methods
 	FindByUsername(username string) (*User, error)

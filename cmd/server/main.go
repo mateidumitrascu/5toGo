@@ -17,14 +17,6 @@ import (
 )
 
 func main() {
-	srv := server.NewHTTPServer()
-
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			fmt.Printf("Error listening and serving: %v\n", err)
-		}
-	}()
-
 	fmt.Println("Testing db connection")
 	db, err := database.GetDatabaseConnection()
 	if err != nil {
@@ -32,6 +24,14 @@ func main() {
 	}
 	defer db.Close()
 	fmt.Println("Database connection successful")
+
+	srv := server.NewHTTPServer(db)
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			fmt.Printf("Error listening and serving: %v\n", err)
+		}
+	}()
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)

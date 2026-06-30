@@ -19,7 +19,8 @@ func NewMux(app *application) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", app.serverHealthHandler)
-	mux.HandleFunc("POST /users", app.registerUser)
+	mux.HandleFunc("POST /register", app.registerUser)
+	mux.HandleFunc("POST /login", app.loginUser)
 
 	return mux
 }

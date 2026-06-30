@@ -2,7 +2,9 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"sync/atomic"
@@ -42,12 +44,14 @@ func (app *application) connState(conn net.Conn, state http.ConnState) {
 }
 
 // Users handlers
-func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
-	var userdata struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
 
+type credentialsBody struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
+	var userdata credentialsBody
 	err := json.NewDecoder(r.Body).Decode(&userdata)
 	if err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
@@ -60,11 +64,49 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = auth.RegisterUser(userdata.Username, userdata.Password, app.userRepo)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+
+	if errors.Is(err, users.ErrUserExists) {
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte("username is taken"))
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	if err != nil {
+		log.Printf("registration error: %v", err)
+		http.Error(w, "there was an error processing your request", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("user created"))
+}
+
+func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
+	var userdata credentialsBody
+	err := json.NewDecoder(r.Body).Decode(&userdata)
+	if err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if userdata.Username == "" || userdata.Password == "" {
+		http.Error(w, "invalid request data", http.StatusBadRequest)
+		return
+	}
+
+	user, err := auth.LoginUser(userdata.Username, userdata.Password, app.userRepo)
+	if errors.Is(err, auth.ErrInvalidCredentials) {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("invalid credentials"))
+		return
+	}
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("there was an error processing your request"))
+		return
+	}
+
+	fmt.Printf("user %s logged in\n", user.Username)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("user logged in"))
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/5fives-to-go/internal/auth"
+	"github.com/5fives-to-go/internal/token"
 	"github.com/5fives-to-go/internal/users"
 )
 
@@ -28,11 +29,13 @@ func NewMux(app *application) *http.ServeMux {
 
 func NewHTTPServer(db *sql.DB) *http.Server {
 	userRepo := users.NewUserSQLiteRepo(db)
-	authService := auth.NewAuthService(userRepo)
+	tokenRepo := token.NewTokenSQLiteRepo(db)
+
+	authService := auth.NewAuthService(userRepo, tokenRepo)
 
 	app := &application{
-		appStats:   ApplicationStatus{startTime: time.Now()},
-		authServce: authService,
+		appStats:    ApplicationStatus{startTime: time.Now()},
+		authService: authService,
 	}
 
 	return &http.Server{

@@ -5,23 +5,31 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/5fives-to-go/internal/token"
 	"github.com/5fives-to-go/internal/users"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserStore interface {
 	Create(u *users.User) (*users.User, error)
-
 	FindByUsername(username string) (*users.User, error)
 }
 
-type AuthService struct {
-	userStore UserStore
+type TokenStore interface {
+	Create(t *token.AuthToken) (*token.AuthToken, error)
+	FindToken(value string) (*token.AuthToken, error)
+	DeleteByHash(hash string) error
 }
 
-func NewAuthService(us UserStore) *AuthService {
+type AuthService struct {
+	userStore  UserStore
+	tokenStore TokenStore
+}
+
+func NewAuthService(us UserStore, ts TokenStore) *AuthService {
 	return &AuthService{
-		userStore: us,
+		userStore:  us,
+		tokenStore: ts,
 	}
 }
 

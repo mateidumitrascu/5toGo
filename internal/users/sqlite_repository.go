@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var UsersTable = "users"
+const UsersTable = "users"
 
 type UserSQLiteRepo struct {
 	db *sql.DB
@@ -38,6 +38,7 @@ func (r *UserSQLiteRepo) FindByUsername(username string) (*User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("find user by username: %w", err)
 	}
+	//nolint:errcheck
 	defer rows.Close()
 
 	users, err := parseUsers(rows)

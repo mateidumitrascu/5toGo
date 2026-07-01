@@ -20,8 +20,8 @@ type AuthService interface {
 }
 
 type application struct {
-	appStats   ApplicationStatus
-	authServce AuthService
+	appStats    ApplicationStatus
+	authService AuthService
 }
 
 type ApplicationStatus struct {
@@ -68,7 +68,7 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = app.authServce.RegisterUser(userdata.Username, userdata.Password)
+	_, err = app.authService.RegisterUser(userdata.Username, userdata.Password)
 
 	if errors.Is(err, users.ErrUserExists) {
 		w.WriteHeader(http.StatusConflict)
@@ -102,7 +102,7 @@ func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := app.authServce.LoginUser(userdata.Username, userdata.Password)
+	user, err := app.authService.LoginUser(userdata.Username, userdata.Password)
 	if errors.Is(err, auth.ErrInvalidCredentials) {
 		w.WriteHeader(http.StatusUnauthorized)
 

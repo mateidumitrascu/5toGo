@@ -1,0 +1,5 @@
+CREATE TABLE tokens (
+  hash TEXT UNIQUE NOT NULL,
+  uid INTEGER REFERENCES users(uid) NOT NULL,
+  expiry TIMESTAMP NOT NULL
+)

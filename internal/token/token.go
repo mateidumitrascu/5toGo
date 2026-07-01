@@ -21,7 +21,7 @@ const (
 	DefaultTokenSize = 16
 )
 
-func NewToken(hash string, uid int64, expiry time.Time) *AuthToken {
+func NewAuthToken(hash string, uid int64, expiry time.Time) *AuthToken {
 	return &AuthToken{
 		Hash:   hash,
 		UID:    uid,

@@ -10,13 +10,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/5fives-to-go/internal/api"
 	"github.com/5fives-to-go/internal/auth"
 	"github.com/5fives-to-go/internal/users"
 )
 
 type AuthService interface {
-	RegisterUser(username string, password string) (*users.User, error)
-	LoginUser(username string, password string) (*users.User, error)
+	RegisterUser(username string, password string) (*users.User, string, error)
+	LoginUser(username string, password string) (*users.User, string, error)
 }
 
 type application struct {
@@ -49,78 +50,87 @@ func (app *application) connState(conn net.Conn, state http.ConnState) {
 }
 
 // Users handlers
-
-type credentialsBody struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
 func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
-	var userdata credentialsBody
+	var userdata api.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&userdata)
 	if err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid request structure")
 		return
 	}
 
 	if userdata.Username == "" || userdata.Password == "" {
-		http.Error(w, "invalid request data", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid request data")
 		return
 	}
 
-	_, err = app.authService.RegisterUser(userdata.Username, userdata.Password)
+	_, authToken, err := app.authService.RegisterUser(userdata.Username, userdata.Password)
 
 	if errors.Is(err, users.ErrUserExists) {
-		w.WriteHeader(http.StatusConflict)
-
-		//nolint:errcheck
-		w.Write([]byte("username is taken"))
+		writeError(w, http.StatusConflict, "username is taken")
 		return
 	}
 
 	if err != nil {
 		log.Printf("registration error: %v", err)
-		http.Error(w, "there was an error processing your request", http.StatusInternalServerError)
+		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
 		return
 	}
 
+	if authToken == "" {
+		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
 	//nolint:errcheck
-	w.Write([]byte("user created"))
+	json.NewEncoder(w).Encode(api.RegistrationResponse{Token: authToken})
 }
 
 func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
-	var userdata credentialsBody
+	var userdata api.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&userdata)
 	if err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid request structure")
 		return
 	}
 
 	if userdata.Username == "" || userdata.Password == "" {
-		http.Error(w, "invalid request data", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid request data")
 		return
 	}
 
-	user, err := app.authService.LoginUser(userdata.Username, userdata.Password)
+	user, authToken, err := app.authService.LoginUser(userdata.Username, userdata.Password)
+
 	if errors.Is(err, auth.ErrInvalidCredentials) {
-		w.WriteHeader(http.StatusUnauthorized)
-
-		//nolint:errcheck
-		w.Write([]byte("invalid credentials"))
+		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
 
-		//nolint:errcheck
-		w.Write([]byte("there was an error processing your request"))
+	if err != nil {
+		log.Printf("error logging user in: %v", err)
+		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
+		return
+	}
+
+	if authToken == "" {
+		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
 		return
 	}
 
 	fmt.Printf("user %s logged in\n", user.Username)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	//nolint:errcheck
-	w.Write([]byte("user logged in"))
+	json.NewEncoder(w).Encode(api.LoginResponse{Token: authToken})
+}
+
+// HELPERS
+func writeError(w http.ResponseWriter, status int, message string) {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+	//nolint:errcheck
+	json.NewEncoder(w).Encode(api.ErrorResponse{ErrorMessage: message})
 }

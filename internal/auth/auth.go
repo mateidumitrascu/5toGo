@@ -4,6 +4,7 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/5fives-to-go/internal/token"
 	"github.com/5fives-to-go/internal/users"
@@ -33,32 +34,44 @@ func NewAuthService(us UserStore, ts TokenStore) *AuthService {
 	}
 }
 
-func (authsrv *AuthService) RegisterUser(username string, password string) (*users.User, error) {
+func (authsrv *AuthService) RegisterUser(username string, password string) (*users.User, string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, fmt.Errorf("register user: hash password: %w", err)
+		return nil, "", fmt.Errorf("register user: hash password: %w", err)
 	}
 	user, err := authsrv.userStore.Create(users.NewUser(username, hash))
 	if err != nil {
-		return nil, fmt.Errorf("register user: %w", err)
+		return nil, "", fmt.Errorf("register user: %w", err)
 	}
-	return user, nil
+	tokenValue := token.GenerateToken()
+	_, err = authsrv.tokenStore.Create(token.NewAuthToken(token.HashToken(tokenValue), user.UID, time.Now().AddDate(0, 0, 10)))
+	if err != nil {
+		return user, "", nil
+	}
+
+	return user, tokenValue, nil
 }
 
-func (authsrv *AuthService) LoginUser(username string, password string) (*users.User, error) {
+func (authsrv *AuthService) LoginUser(username string, password string) (*users.User, string, error) {
 	user, err := authsrv.userStore.FindByUsername(username)
 
 	if errors.Is(err, users.ErrUserNotFound) {
-		return nil, fmt.Errorf("login user: %w", ErrInvalidCredentials)
+		return nil, "", fmt.Errorf("login user: %w", ErrInvalidCredentials)
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("login user: find by username: %w", err)
+		return nil, "", fmt.Errorf("login user: find by username: %w", err)
 	}
 
 	if user.ValidatePassword(password) {
-		return user, nil
+		tokenValue := token.GenerateToken()
+		t := token.NewAuthToken(token.HashToken(tokenValue), user.UID, time.Now().AddDate(0, 0, 10))
+		_, err := authsrv.tokenStore.Create(t)
+		if err != nil {
+			return nil, "", fmt.Errorf("error saving token in auth service: %w", err)
+		}
+		return user, tokenValue, nil
 	}
 
-	return nil, fmt.Errorf("login user: password check: %w", ErrInvalidCredentials)
+	return nil, "", fmt.Errorf("login user: password check: %w", ErrInvalidCredentials)
 }

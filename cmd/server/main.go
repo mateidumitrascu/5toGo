@@ -22,6 +22,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("database connection failed: %v", err)
 	}
+
+	//nolint:errcheck
 	defer db.Close()
 	fmt.Println("Database connection successful")
 

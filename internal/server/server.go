@@ -1,4 +1,4 @@
-// Package server defines the server's infrastructure and functionality
+// Package server Server infrastructure and functionality
 package server
 
 import (
@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/5fives-to-go/internal/auth"
 	"github.com/5fives-to-go/internal/users"
 )
 
@@ -26,11 +27,12 @@ func NewMux(app *application) *http.ServeMux {
 }
 
 func NewHTTPServer(db *sql.DB) *http.Server {
-	userrepo := users.NewUserSQLiteRepo(db)
+	userRepo := users.NewUserSQLiteRepo(db)
+	authService := auth.NewAuthService(userRepo)
 
 	app := &application{
-		appStats: ApplicationStatus{startTime: time.Now()},
-		userRepo: userrepo,
+		appStats:   ApplicationStatus{startTime: time.Now()},
+		authServce: authService,
 	}
 
 	return &http.Server{

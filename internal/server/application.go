@@ -14,9 +14,14 @@ import (
 	"github.com/5fives-to-go/internal/users"
 )
 
+type AuthService interface {
+	RegisterUser(username string, password string) (*users.User, error)
+	LoginUser(username string, password string) (*users.User, error)
+}
+
 type application struct {
-	appStats ApplicationStatus
-	userRepo users.UserRepo
+	appStats   ApplicationStatus
+	authServce AuthService
 }
 
 type ApplicationStatus struct {
@@ -63,10 +68,12 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = auth.RegisterUser(userdata.Username, userdata.Password, app.userRepo)
+	_, err = app.authServce.RegisterUser(userdata.Username, userdata.Password)
 
 	if errors.Is(err, users.ErrUserExists) {
 		w.WriteHeader(http.StatusConflict)
+
+		//nolint:errcheck
 		w.Write([]byte("username is taken"))
 		return
 	}
@@ -78,6 +85,7 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	//nolint:errcheck
 	w.Write([]byte("user created"))
 }
 
@@ -94,19 +102,25 @@ func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := auth.LoginUser(userdata.Username, userdata.Password, app.userRepo)
+	user, err := app.authServce.LoginUser(userdata.Username, userdata.Password)
 	if errors.Is(err, auth.ErrInvalidCredentials) {
 		w.WriteHeader(http.StatusUnauthorized)
+
+		//nolint:errcheck
 		w.Write([]byte("invalid credentials"))
 		return
 	}
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+
+		//nolint:errcheck
 		w.Write([]byte("there was an error processing your request"))
 		return
 	}
 
 	fmt.Printf("user %s logged in\n", user.Username)
 	w.WriteHeader(http.StatusOK)
+
+	//nolint:errcheck
 	w.Write([]byte("user logged in"))
 }

@@ -12,12 +12,14 @@ import (
 
 	"github.com/5fives-to-go/internal/api"
 	"github.com/5fives-to-go/internal/auth"
+	"github.com/5fives-to-go/internal/token"
 	"github.com/5fives-to-go/internal/users"
 )
 
 type AuthService interface {
 	RegisterUser(username string, password string) (*users.User, string, error)
 	LoginUser(username string, password string) (*users.User, string, error)
+	CheckToken(t string) (*token.AuthToken, error)
 }
 
 type application struct {
@@ -125,6 +127,11 @@ func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 
 	//nolint:errcheck
 	json.NewEncoder(w).Encode(api.LoginResponse{Token: authToken})
+}
+
+func (app *application) logoutUser(w http.ResponseWriter, r *http.Request) {
+	//nolint:errcheck
+	w.Write([]byte("you got it!!"))
 }
 
 // HELPERS

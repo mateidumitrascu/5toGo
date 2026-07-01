@@ -34,17 +34,17 @@ func NewAuthService(us UserStore, ts TokenStore) *AuthService {
 	}
 }
 
-func (authsrv *AuthService) RegisterUser(username string, password string) (*users.User, string, error) {
+func (sv *AuthService) RegisterUser(username string, password string) (*users.User, string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, "", fmt.Errorf("register user: hash password: %w", err)
 	}
-	user, err := authsrv.userStore.Create(users.NewUser(username, hash))
+	user, err := sv.userStore.Create(users.NewUser(username, hash))
 	if err != nil {
 		return nil, "", fmt.Errorf("register user: %w", err)
 	}
 	tokenValue := token.GenerateToken()
-	_, err = authsrv.tokenStore.Create(token.NewAuthToken(token.HashToken(tokenValue), user.UID, time.Now().AddDate(0, 0, 10)))
+	_, err = sv.tokenStore.Create(token.NewAuthToken(token.HashToken(tokenValue), user.UID, time.Now().AddDate(0, 0, 10)))
 	if err != nil {
 		return user, "", nil
 	}
@@ -52,8 +52,8 @@ func (authsrv *AuthService) RegisterUser(username string, password string) (*use
 	return user, tokenValue, nil
 }
 
-func (authsrv *AuthService) LoginUser(username string, password string) (*users.User, string, error) {
-	user, err := authsrv.userStore.FindByUsername(username)
+func (sv *AuthService) LoginUser(username string, password string) (*users.User, string, error) {
+	user, err := sv.userStore.FindByUsername(username)
 
 	if errors.Is(err, users.ErrUserNotFound) {
 		return nil, "", fmt.Errorf("login user: %w", ErrInvalidCredentials)
@@ -66,7 +66,7 @@ func (authsrv *AuthService) LoginUser(username string, password string) (*users.
 	if user.ValidatePassword(password) {
 		tokenValue := token.GenerateToken()
 		t := token.NewAuthToken(token.HashToken(tokenValue), user.UID, time.Now().AddDate(0, 0, 10))
-		_, err := authsrv.tokenStore.Create(t)
+		_, err := sv.tokenStore.Create(t)
 		if err != nil {
 			return nil, "", fmt.Errorf("error saving token in auth service: %w", err)
 		}
@@ -74,4 +74,21 @@ func (authsrv *AuthService) LoginUser(username string, password string) (*users.
 	}
 
 	return nil, "", fmt.Errorf("login user: password check: %w", ErrInvalidCredentials)
+}
+
+func (sv *AuthService) CheckToken(t string) (*token.AuthToken, error) {
+	authToken, err := sv.tokenStore.FindToken(t)
+	if err != nil {
+		return nil, fmt.Errorf("error checking token validity: %w", err)
+	}
+
+	if authToken == nil {
+		return nil, nil
+	}
+
+	if !authToken.Expiry.After(time.Now()) {
+		return nil, nil
+	}
+
+	return authToken, nil
 }

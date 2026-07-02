@@ -12,6 +12,7 @@ import (
 
 	"github.com/5fives-to-go/internal/api"
 	"github.com/5fives-to-go/internal/auth"
+	"github.com/5fives-to-go/internal/sessions"
 	"github.com/5fives-to-go/internal/token"
 	"github.com/5fives-to-go/internal/users"
 )
@@ -23,9 +24,14 @@ type AuthService interface {
 	LogoutUser(t string) error
 }
 
+type SessionService interface {
+	GetUserSessions(uid int64) ([]sessions.Session, error)
+}
+
 type application struct {
-	appStats    ApplicationStatus
-	authService AuthService
+	appStats       ApplicationStatus
+	authService    AuthService
+	sessionService SessionService
 }
 
 type ApplicationStatus struct {

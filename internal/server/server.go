@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/5fives-to-go/internal/auth"
+	"github.com/5fives-to-go/internal/sessions"
 	"github.com/5fives-to-go/internal/token"
 	"github.com/5fives-to-go/internal/users"
 )
@@ -24,6 +25,7 @@ func NewMux(app *application) *http.ServeMux {
 	mux.HandleFunc("POST /api/register", app.registerUser)
 	mux.HandleFunc("POST /api/login", app.loginUser)
 	mux.Handle("POST /api/logout", app.requireAuth(http.HandlerFunc(app.logoutUser)))
+	mux.Handle("GET /api/sessions", app.requireAuth(http.HandlerFunc(app.allUserSessions)))
 
 	return mux
 }
@@ -31,12 +33,15 @@ func NewMux(app *application) *http.ServeMux {
 func NewHTTPServer(db *sql.DB) *http.Server {
 	userRepo := users.NewUserSQLiteRepo(db)
 	tokenRepo := token.NewTokenSQLiteRepo(db)
+	sessionRepo := sessions.NewSessionSQLiteRepo(db)
 
 	authService := auth.NewAuthService(userRepo, tokenRepo)
+	sessionService := sessions.NewSessionService(sessionRepo)
 
 	app := &application{
-		appStats:    ApplicationStatus{startTime: time.Now()},
-		authService: authService,
+		appStats:       ApplicationStatus{startTime: time.Now()},
+		authService:    authService,
+		sessionService: sessionService,
 	}
 
 	return &http.Server{

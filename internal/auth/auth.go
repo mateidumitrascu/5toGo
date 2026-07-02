@@ -76,6 +76,14 @@ func (sv *AuthService) LoginUser(username string, password string) (*users.User,
 	return nil, "", fmt.Errorf("login user: password check: %w", ErrInvalidCredentials)
 }
 
+func (sv *AuthService) LogoutUser(tokenHash string) error {
+	err := sv.tokenStore.DeleteByHash(tokenHash)
+	if err != nil {
+		return fmt.Errorf("error logging out user: %w", err)
+	}
+	return nil
+}
+
 func (sv *AuthService) CheckToken(t string) (*token.AuthToken, error) {
 	authToken, err := sv.tokenStore.FindToken(t)
 	if err != nil {

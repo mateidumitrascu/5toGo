@@ -5,11 +5,16 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/5fives-to-go/internal/token"
 )
 
 type ctxKey string
 
-var userIDKey ctxKey = "userID"
+var (
+	userIDKey    ctxKey = "userID"
+	tokenHashKey ctxKey = "tokenHash"
+)
 
 type TokenValidator interface {
 	CheckToken(t string) (bool, error)
@@ -23,8 +28,8 @@ func (app *application) requireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		token := strings.TrimPrefix(authorization, "Bearer ")
-		authToken, err := app.authService.CheckToken(token)
+		t := strings.TrimPrefix(authorization, "Bearer ")
+		authToken, err := app.authService.CheckToken(t)
 		if err != nil {
 			log.Printf("error checking token in middleware: %v", err)
 			writeError(w, http.StatusInternalServerError, "there was an error checking your authorization")
@@ -36,6 +41,7 @@ func (app *application) requireAuth(next http.Handler) http.Handler {
 			return
 		}
 		ctx := context.WithValue(r.Context(), userIDKey, authToken.UID)
+		ctx = context.WithValue(ctx, tokenHashKey, token.HashToken(t))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

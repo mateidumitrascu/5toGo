@@ -20,6 +20,7 @@ type AuthService interface {
 	RegisterUser(username string, password string) (*users.User, string, error)
 	LoginUser(username string, password string) (*users.User, string, error)
 	CheckToken(t string) (*token.AuthToken, error)
+	LogoutUser(t string) error
 }
 
 type application struct {
@@ -130,8 +131,13 @@ func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) logoutUser(w http.ResponseWriter, r *http.Request) {
-	//nolint:errcheck
-	w.Write([]byte("you got it!!"))
+	tokenHash := r.Context().Value(tokenHashKey).(string)
+	err := app.authService.LogoutUser(tokenHash)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "there was an error logging out, try again later")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // HELPERS

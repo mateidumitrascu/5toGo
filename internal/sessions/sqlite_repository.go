@@ -45,6 +45,22 @@ func (sr *SessionSQLiteRepo) FindUserSessions(uid int64) ([]Session, error) {
 	return userSessions, nil
 }
 
+func (sr *SessionSQLiteRepo) FindCompletedSessions(uid int64) ([]Session, error) {
+	rows, err := sr.db.Query("SELECT session_id, uid, started_at, completed_at, duration FROM "+SessionsTable+" WHERE uid=? AND completed_at IS NOT NULL", uid)
+	if err != nil {
+		return nil, fmt.Errorf("error getting user sessions: %w", err)
+	}
+
+	//nolint:errcheck
+	defer rows.Close()
+
+	userSessions, err := parseRows(rows)
+	if err != nil {
+		return nil, fmt.Errorf("error finding user sessions: %w", err)
+	}
+	return userSessions, nil
+}
+
 func parseRows(rows *sql.Rows) ([]Session, error) {
 	s := []Session{}
 	for rows.Next() {

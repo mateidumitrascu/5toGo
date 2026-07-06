@@ -25,7 +25,7 @@ type AuthService interface {
 }
 
 type SessionService interface {
-	GetUserSessions(uid int64) ([]sessions.Session, error)
+	// GetUserSessions(uid int64) ([]sessions.Session, error)
 	GetCompletedSessions(uid int64) ([]sessions.Session, error)
 }
 

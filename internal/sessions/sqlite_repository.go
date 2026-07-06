@@ -16,8 +16,8 @@ func NewSessionSQLiteRepo(db *sql.DB) *SessionSQLiteRepo {
 }
 
 func (sr *SessionSQLiteRepo) Create(s *Session) (*Session, error) {
-	result, err := sr.db.Exec("INSERT INTO "+SessionsTable+"(uid, started_at, completed_at, duration) VALUES (?, ?, ?, ?)",
-		s.UserID, s.StartedAt, s.CompletedAt, s.Duration)
+	result, err := sr.db.Exec("INSERT INTO "+SessionsTable+"(uid, started_at, completed_at, duration, local_date) VALUES (?, ?, ?, ?, ?)",
+		s.UserID, s.StartedAt, s.CompletedAt, s.Duration, s.LocalDate)
 	if err != nil {
 		return nil, fmt.Errorf("error executing session insert: %w", err)
 	}
@@ -29,24 +29,24 @@ func (sr *SessionSQLiteRepo) Create(s *Session) (*Session, error) {
 	return s, nil
 }
 
-func (sr *SessionSQLiteRepo) FindUserSessions(uid int64) ([]Session, error) {
-	rows, err := sr.db.Query("SELECT session_id, uid, started_at, completed_at, duration FROM "+SessionsTable+" WHERE uid=?", uid)
-	if err != nil {
-		return nil, fmt.Errorf("error getting user sessions: %w", err)
-	}
-
-	//nolint:errcheck
-	defer rows.Close()
-
-	userSessions, err := parseRows(rows)
-	if err != nil {
-		return nil, fmt.Errorf("error finding user sessions: %w", err)
-	}
-	return userSessions, nil
-}
+// func (sr *SessionSQLiteRepo) FindUserSessions(uid int64) ([]Session, error) {
+// 	rows, err := sr.db.Query("SELECT session_id, uid, started_at, completed_at, duration, local_date FROM "+SessionsTable+" WHERE uid=?", uid)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("error getting user sessions: %w", err)
+// 	}
+//
+// 	//nolint:errcheck
+// 	defer rows.Close()
+//
+// 	userSessions, err := parseRows(rows)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("error finding user sessions: %w", err)
+// 	}
+// 	return userSessions, nil
+// }
 
 func (sr *SessionSQLiteRepo) FindCompletedSessions(uid int64) ([]Session, error) {
-	rows, err := sr.db.Query("SELECT session_id, uid, started_at, completed_at, duration FROM "+SessionsTable+" WHERE uid=? AND completed_at IS NOT NULL", uid)
+	rows, err := sr.db.Query("SELECT session_id, uid, started_at, completed_at, duration, local_date FROM "+SessionsTable+" WHERE uid=? AND completed_at IS NOT NULL", uid)
 	if err != nil {
 		return nil, fmt.Errorf("error getting user sessions: %w", err)
 	}
@@ -71,6 +71,7 @@ func parseRows(rows *sql.Rows) ([]Session, error) {
 			&sesh.StartedAt,
 			&sesh.CompletedAt,
 			&sesh.Duration,
+			&sesh.LocalDate,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sessions from rows: %w", err)

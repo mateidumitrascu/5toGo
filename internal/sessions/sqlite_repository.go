@@ -21,11 +21,11 @@ func (sr *SessionSQLiteRepo) Create(s *Session) (*Session, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error executing session insert: %w", err)
 	}
-	insertId, err := result.LastInsertId()
+	insertID, err := result.LastInsertId()
 	if err != nil {
 		return nil, fmt.Errorf("error getting last inserted session id: %w", err)
 	}
-	s.SessionID = insertId
+	s.SessionID = insertID
 	return s, nil
 }
 

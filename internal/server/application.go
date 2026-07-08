@@ -27,6 +27,7 @@ type AuthService interface {
 type SessionService interface {
 	// GetUserSessions(uid int64) ([]sessions.Session, error)
 	GetCompletedSessions(uid int64) ([]sessions.Session, error)
+	RecordSession(uid int64, req *api.RecordSessionRequest) (*sessions.Session, error)
 }
 
 type application struct {

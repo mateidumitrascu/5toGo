@@ -9,10 +9,10 @@ type Session struct {
 	StartedAt   time.Time `json:"startedAt"`
 	CompletedAt time.Time `json:"completedAt"`
 	Duration    int       `json:"duration"`
-	LocalDate   time.Time `json:"localDate"`
+	LocalDate   string    `json:"localDate"`
 }
 
-func NewSession(sid int64, uid int64, start time.Time, completed time.Time, duration int, local time.Time) *Session {
+func NewSession(sid int64, uid int64, start time.Time, completed time.Time, duration int, local string) *Session {
 	return &Session{
 		SessionID:   sid,
 		UserID:      uid,

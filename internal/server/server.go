@@ -26,8 +26,9 @@ func NewMux(app *application) *http.ServeMux {
 	mux.HandleFunc("POST /api/login", app.loginUser)
 	mux.Handle("POST /api/logout", app.requireAuth(http.HandlerFunc(app.logoutUser)))
 	// mux.Handle("GET /api/sessions/all", app.requireAuth(http.HandlerFunc(app.allUserSessions)))
-	mux.Handle("GET /api/sessions/completed", app.requireAuth(http.HandlerFunc(app.completedUserSessions)))
-	mux.Handle("POST /api/sessions/completed", app.requireAuth(http.HandlerFunc(app.recordCompletedSession)))
+	mux.Handle("GET /api/sessions", app.requireAuth(http.HandlerFunc(app.completedUserSessions)))
+	mux.Handle("POST /api/sessions", app.requireAuth(http.HandlerFunc(app.recordCompletedSession)))
+	// mux.Handle("GET /api/sessions/today", app.requireAuth(http.HandlerFunc(app.dailyUserSessions)))
 	mux.Handle("PUT /api/sessions/active-session", app.requireAuth(http.HandlerFunc(app.recordActiveSession)))
 
 	return mux

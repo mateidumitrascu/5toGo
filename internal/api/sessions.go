@@ -7,3 +7,7 @@ type RecordSessionRequest struct {
 	CompletedAt time.Time `json:"completedAt"`
 	Duration    int       `json:"duration"`
 }
+
+type RecordActiveSessionReq struct {
+	ElapsedSeconds int `json:"elapsedSeconds"`
+}

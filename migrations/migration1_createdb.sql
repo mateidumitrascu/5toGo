@@ -15,10 +15,10 @@ CREATE TABLE sessions (
 
 CREATE TABLE active_sessions (
     active_session_id INTEGER PRIMARY KEY,
-    uid INTEGER REFERENCES users(uid),
+    uid INTEGER REFERENCES users(uid) UNIQUE NOT NULL,
     started_at TIMESTAMP NOT NULL,
-    elapsed_seconds INTEGER NOT NULL,
-    last_updated TIMESTAMP
+    elapsed_seconds INTEGER NOT NULL DEFAULT 0 CHECK (elapsed_seconds >=0),
+    last_updated TIMESTAMP NOT NULL
 );
 
 CREATE TABLE user_settings (

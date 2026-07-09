@@ -28,6 +28,7 @@ type SessionService interface {
 	// GetUserSessions(uid int64) ([]sessions.Session, error)
 	GetCompletedSessions(uid int64) ([]sessions.Session, error)
 	RecordSession(uid int64, req *api.RecordSessionRequest) (*sessions.Session, error)
+	RecordActiveSession(uid int64, req *api.RecordActiveSessionReq) (*sessions.ActiveSession, error)
 }
 
 type application struct {
@@ -152,6 +153,17 @@ func (app *application) logoutUser(w http.ResponseWriter, r *http.Request) {
 func writeError(w http.ResponseWriter, status int, message string) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(status)
-	//nolint:errcheck
-	json.NewEncoder(w).Encode(api.ErrorResponse{ErrorMessage: message})
+	err := json.NewEncoder(w).Encode(api.ErrorResponse{ErrorMessage: message})
+	if err != nil {
+		log.Printf("error encoding response: %v", err)
+	}
+}
+
+func writeMessage(w http.ResponseWriter, status int, message string) {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+	err := json.NewEncoder(w).Encode(api.MessageResponse{Message: message})
+	if err != nil {
+		log.Printf("error encoding response: %v", err)
+	}
 }

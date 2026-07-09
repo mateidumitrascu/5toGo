@@ -64,3 +64,29 @@ func (app *application) recordCompletedSession(w http.ResponseWriter, r *http.Re
 
 	w.WriteHeader(http.StatusCreated)
 }
+
+func (app *application) recordActiveSession(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(userIDKey).(int64)
+	var req api.RecordActiveSessionReq
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	err := decoder.Decode(&req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid active session request structure")
+		return
+	}
+	if req.ElapsedSeconds <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid active session values")
+		return
+	}
+
+	_, err = app.sessionService.RecordActiveSession(uid, &req)
+	if err != nil {
+		log.Printf("%v", err)
+		writeError(w, http.StatusInternalServerError, "there was an error processing the request")
+		return
+	}
+	writeMessage(w, http.StatusOK, "active session recorded")
+}

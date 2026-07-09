@@ -9,7 +9,10 @@ type SessionSQLiteRepo struct {
 	db *sql.DB
 }
 
-const SessionsTable = "sessions"
+const (
+	SessionsTable       = "sessions"
+	ActiveSessionsTable = "active_sessions"
+)
 
 func NewSessionSQLiteRepo(db *sql.DB) *SessionSQLiteRepo {
 	return &SessionSQLiteRepo{db: db}
@@ -27,6 +30,21 @@ func (sr *SessionSQLiteRepo) Create(s *Session) (*Session, error) {
 	}
 	s.SessionID = insertID
 	return s, nil
+}
+
+func (sr *SessionSQLiteRepo) UpdateActiveSession(a *ActiveSession) (*ActiveSession, error) {
+	var id int64
+	err := sr.db.QueryRow("INSERT INTO "+ActiveSessionsTable+` (uid, started_at, elapsed_seconds, last_updated, local_date) VALUES (?, ?, ?, ?, ?) 
+			ON CONFLICT(uid) DO 
+			UPDATE SET elapsed_seconds = excluded.elapsed_seconds, last_updated = excluded.last_updated
+			RETURNING active_session_id
+		`,
+		a.UserID, a.StartedAt, a.ElapsedSeconds, a.LastUpdated, a.LocalDate).Scan(&id)
+	if err != nil {
+		return nil, fmt.Errorf("error reading upserted active session id: %w", err)
+	}
+	a.ActiveSessionID = id
+	return a, nil
 }
 
 // func (sr *SessionSQLiteRepo) FindUserSessions(uid int64) ([]Session, error) {

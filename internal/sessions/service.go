@@ -13,6 +13,7 @@ type SessionStore interface {
 	Create(s *Session) (*Session, error)
 	// FindUserSessions(uid int64) ([]Session, error)
 	FindCompletedSessions(uid int64) ([]Session, error)
+	UpdateActiveSession(*ActiveSession) (*ActiveSession, error)
 }
 
 type SessionService struct {
@@ -41,12 +42,24 @@ func (srv *SessionService) GetCompletedSessions(uid int64) ([]Session, error) {
 }
 
 func (srv *SessionService) RecordSession(uid int64, req *api.RecordSessionRequest) (*Session, error) {
-	s, err := srv.sessionStore.Create(NewSession(0, uid, req.StartedAt, req.CompletedAt, req.Duration, time.Now().In(srv.getUserTimezone(uid)).Format(localDateFormat)))
+	s, err := srv.sessionStore.Create(NewSession(0, uid, req.StartedAt, req.CompletedAt, req.Duration, srv.computeUserToday(uid)))
 	if err != nil {
 		return nil, fmt.Errorf("service errro recording session: %w", err)
 	}
 
 	return s, nil
+}
+
+func (srv *SessionService) RecordActiveSession(uid int64, req *api.RecordActiveSessionReq) (*ActiveSession, error) {
+	s, err := srv.sessionStore.UpdateActiveSession(NewActiveSession(0, uid, time.Now().UTC(), req.ElapsedSeconds, time.Now().UTC(), srv.computeUserToday(uid)))
+	if err != nil {
+		return nil, fmt.Errorf("service error finding completed user sessions: %w", err)
+	}
+	return s, nil
+}
+
+func (srv *SessionService) computeUserToday(uid int64) string {
+	return time.Now().In(srv.getUserTimezone(uid)).Format(localDateFormat)
 }
 
 func (srv *SessionService) getUserTimezone(uid int64) *time.Location {

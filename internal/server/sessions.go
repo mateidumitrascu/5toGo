@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -82,13 +81,13 @@ func (app *application) getDailySessions(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	fmt.Printf("Compiled day: %v\n", day)
-
 	daySessions, err := app.sessionService.GetDailySessions(uid, day)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "there was an error fetching "+day.String()+" sessions")
 	}
 	w.Header().Add("Content-Type", "application/json")
+
+	//nolint:errcheck
 	json.NewEncoder(w).Encode(daySessions)
 }
 
@@ -111,9 +110,30 @@ func (app *application) recordActiveSession(w http.ResponseWriter, r *http.Reque
 
 	_, err = app.sessionService.RecordActiveSession(uid, &req)
 	if err != nil {
-		log.Printf("%v", err)
+		log.Printf("%v\n", err)
 		writeError(w, http.StatusInternalServerError, "there was an error processing the request")
 		return
 	}
 	writeMessage(w, http.StatusOK, "active session recorded")
+}
+
+func (app *application) getActiveSession(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(userIDKey).(int64)
+
+	activeSesison, err := app.sessionService.GetActiveSession(uid)
+	if err != nil {
+		log.Printf("%v\n", err)
+		writeError(w, http.StatusInternalServerError, "there was an error fetching your active session")
+		return
+	}
+
+	if activeSesison == nil {
+		writeError(w, http.StatusNotFound, "no active session found")
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+
+	//nolint:errcheck
+	json.NewEncoder(w).Encode(activeSesison)
 }

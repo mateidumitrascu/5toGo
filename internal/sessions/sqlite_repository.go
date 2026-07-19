@@ -97,6 +97,31 @@ func (sr *SessionSQLiteRepo) FindCompletedSessions(uid int64) ([]Session, error)
 	return userSessions, nil
 }
 
+func (sr *SessionSQLiteRepo) FindActiveSession(uid int64) (*ActiveSession, error) {
+	rows, err := sr.db.Query("SELECT active_session_id, uid, started_at, elapsed_seconds, last_updated, local_date FROM "+ActiveSessionsTable+" WHERE uid = ?", uid)
+	if err != nil {
+		return nil, fmt.Errorf("repo error fetching active session: %w", err)
+	}
+
+	//nolint:errcheck
+	defer rows.Close()
+
+	s, err := parseActiveSession(rows)
+	if err != nil {
+		return nil, fmt.Errorf("repo error fetching active session: %w", err)
+	}
+
+	return s, nil
+}
+
+func (sr *SessionSQLiteRepo) DeleteActiveSession(uid int64) error {
+	_, err := sr.db.Exec("DELETE FROM "+ActiveSessionsTable+" WHERE uid = ?", uid)
+	if err != nil {
+		return fmt.Errorf("repo error deleting active session: %w", err)
+	}
+	return nil
+}
+
 func parseRows(rows *sql.Rows) ([]Session, error) {
 	s := []Session{}
 	for rows.Next() {
@@ -119,4 +144,21 @@ func parseRows(rows *sql.Rows) ([]Session, error) {
 	}
 
 	return s, nil
+}
+
+func parseActiveSession(rows *sql.Rows) (*ActiveSession, error) {
+	var s ActiveSession
+
+	if !rows.Next() {
+		return nil, nil
+	}
+
+	err := rows.Scan(&s.ActiveSessionID, &s.UserID, &s.StartedAt, &s.ElapsedSeconds, &s.LastUpdated, &s.LocalDate)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing active session: %w", err)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error encountered in rows after parsing active session: %w", err)
+	}
+	return &s, nil
 }

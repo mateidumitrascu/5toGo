@@ -137,3 +137,14 @@ func (app *application) getActiveSession(w http.ResponseWriter, r *http.Request)
 	//nolint:errcheck
 	json.NewEncoder(w).Encode(activeSesison)
 }
+
+func (app *application) deleteActiveSession(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(userIDKey).(int64)
+
+	err := app.sessionService.DropActiveSession(uid)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "there was an error deleting your active session")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

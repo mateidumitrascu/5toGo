@@ -31,6 +31,7 @@ func NewMux(app *application) *http.ServeMux {
 	mux.Handle("GET /api/sessions/today", app.requireAuth(http.HandlerFunc(app.getDailySessions)))
 	mux.Handle("PUT /api/sessions/active-session", app.requireAuth(http.HandlerFunc(app.recordActiveSession)))
 	mux.Handle("GET /api/sessions/active-session", app.requireAuth(http.HandlerFunc(app.getActiveSession)))
+	mux.Handle("DELETE /api/sessions/active-session", app.requireAuth(http.HandlerFunc(app.deleteActiveSession)))
 
 	return mux
 }

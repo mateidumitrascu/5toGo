@@ -103,6 +103,7 @@ func (srv *SessionService) computeUserToday(uid int64) string {
 	return time.Now().In(srv.getUserTimezone(uid)).Format(localDateFormat)
 }
 
-func (srv *SessionService) getUserTimezone(uid int64) *time.Location {
+// TODO: get the user's timezone by accessing user_settings table
+func (srv *SessionService) getUserTimezone(_ int64) *time.Location {
 	return time.Now().Location()
 }

@@ -29,6 +29,7 @@ type SessionService interface {
 	GetCompletedSessions(uid int64) ([]sessions.Session, error)
 	GetDailySessions(uid int64, day time.Time) ([]sessions.Session, error)
 	GetActiveSession(uid int64) (*sessions.ActiveSession, error)
+	DropActiveSession(uid int64) error
 	RecordSession(uid int64, req *api.RecordSessionRequest) (*sessions.Session, error)
 	RecordActiveSession(uid int64, req *api.RecordActiveSessionReq) (*sessions.ActiveSession, error)
 }

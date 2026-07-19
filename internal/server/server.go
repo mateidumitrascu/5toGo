@@ -28,7 +28,7 @@ func NewMux(app *application) *http.ServeMux {
 	// mux.Handle("GET /api/sessions/all", app.requireAuth(http.HandlerFunc(app.allUserSessions)))
 	mux.Handle("GET /api/sessions", app.requireAuth(http.HandlerFunc(app.completedUserSessions)))
 	mux.Handle("POST /api/sessions", app.requireAuth(http.HandlerFunc(app.recordCompletedSession)))
-	// mux.Handle("GET /api/sessions/today", app.requireAuth(http.HandlerFunc(app.dailyUserSessions)))
+	mux.Handle("GET /api/sessions/today", app.requireAuth(http.HandlerFunc(app.getDailySessions)))
 	mux.Handle("PUT /api/sessions/active-session", app.requireAuth(http.HandlerFunc(app.recordActiveSession)))
 
 	return mux

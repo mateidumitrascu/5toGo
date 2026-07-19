@@ -12,6 +12,7 @@ const localDateFormat = "2006-01-02"
 type SessionStore interface {
 	Create(s *Session) (*Session, error)
 	// FindUserSessions(uid int64) ([]Session, error)
+	FindByDay(uid int64, day string) ([]Session, error)
 	FindCompletedSessions(uid int64) ([]Session, error)
 	UpdateActiveSession(*ActiveSession) (*ActiveSession, error)
 }
@@ -44,9 +45,17 @@ func (srv *SessionService) GetCompletedSessions(uid int64) ([]Session, error) {
 func (srv *SessionService) RecordSession(uid int64, req *api.RecordSessionRequest) (*Session, error) {
 	s, err := srv.sessionStore.Create(NewSession(0, uid, req.StartedAt, req.CompletedAt, req.Duration, srv.computeUserToday(uid)))
 	if err != nil {
-		return nil, fmt.Errorf("service errro recording session: %w", err)
+		return nil, fmt.Errorf("service error recording session: %w", err)
 	}
 
+	return s, nil
+}
+
+func (srv *SessionService) GetDailySessions(uid int64, day time.Time) ([]Session, error) {
+	s, err := srv.sessionStore.FindByDay(uid, day.Format("2006-01-02"))
+	if err != nil {
+		return nil, fmt.Errorf("service error finding "+day.String()+" sessions: %w", err)
+	}
 	return s, nil
 }
 

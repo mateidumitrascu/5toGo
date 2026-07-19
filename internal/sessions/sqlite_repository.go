@@ -47,6 +47,21 @@ func (sr *SessionSQLiteRepo) UpdateActiveSession(a *ActiveSession) (*ActiveSessi
 	return a, nil
 }
 
+func (sr *SessionSQLiteRepo) FindByDay(uid int64, day string) ([]Session, error) {
+	rows, err := sr.db.Query("SELECT session_id, uid, started_at, completed_at, duration, local_date FROM "+SessionsTable+" WHERE uid=? AND completed_at IS NOT NULL AND local_date = ?", uid, day)
+	if err != nil {
+		return nil, fmt.Errorf("repo error finding "+day+" sessions: %w", err)
+	}
+	//nolint:errcheck
+	defer rows.Close()
+
+	daySessions, err := parseRows(rows)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing "+day+" sessions: %w", err)
+	}
+	return daySessions, nil
+}
+
 // func (sr *SessionSQLiteRepo) FindUserSessions(uid int64) ([]Session, error) {
 // 	rows, err := sr.db.Query("SELECT session_id, uid, started_at, completed_at, duration, local_date FROM "+SessionsTable+" WHERE uid=?", uid)
 // 	if err != nil {
@@ -76,6 +91,9 @@ func (sr *SessionSQLiteRepo) FindCompletedSessions(uid int64) ([]Session, error)
 	if err != nil {
 		return nil, fmt.Errorf("error finding user sessions: %w", err)
 	}
+	// for _, s := range userSessions {
+	// 	fmt.Printf("Found session with local date: %s", s.LocalDate)
+	// }
 	return userSessions, nil
 }
 

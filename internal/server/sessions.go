@@ -2,9 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/5fives-to-go/internal/api"
 )
@@ -63,6 +65,31 @@ func (app *application) recordCompletedSession(w http.ResponseWriter, r *http.Re
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (app *application) getDailySessions(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(userIDKey).(int64)
+
+	dayString := r.URL.Query().Get("date")
+	if dayString == "" {
+		writeError(w, http.StatusBadRequest, "invalid date query")
+		return
+	}
+
+	day, err := time.Parse("2006-01-02", dayString)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid date parameter structure")
+		return
+	}
+
+	fmt.Printf("Compiled day: %v\n", day)
+
+	daySessions, err := app.sessionService.GetDailySessions(uid, day)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "there was an error fetching "+day.String()+" sessions")
+	}
+	w.Header().Add("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(daySessions)
 }
 
 func (app *application) recordActiveSession(w http.ResponseWriter, r *http.Request) {

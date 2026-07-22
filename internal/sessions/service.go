@@ -10,6 +10,10 @@ import (
 
 const localDateFormat = "2006-01-02"
 
+type TimezoneProvider interface {
+	UserTimezone(uid int64) *time.Location
+}
+
 type SessionStore interface {
 	Create(s *Session) (*Session, error)
 	// FindUserSessions(uid int64) ([]Session, error)
@@ -21,11 +25,12 @@ type SessionStore interface {
 }
 
 type SessionService struct {
-	sessionStore SessionStore
+	sessionStore     SessionStore
+	timezoneProvider TimezoneProvider
 }
 
-func NewSessionService(store SessionStore) *SessionService {
-	return &SessionService{sessionStore: store}
+func NewSessionService(store SessionStore, tzProvider TimezoneProvider) *SessionService {
+	return &SessionService{sessionStore: store, timezoneProvider: tzProvider}
 }
 
 //
@@ -100,10 +105,5 @@ func (srv *SessionService) RecordActiveSession(uid int64, req *api.RecordActiveS
 }
 
 func (srv *SessionService) computeUserToday(uid int64) string {
-	return time.Now().In(srv.getUserTimezone(uid)).Format(localDateFormat)
-}
-
-// TODO: get the user's timezone by accessing user_settings table
-func (srv *SessionService) getUserTimezone(_ int64) *time.Location {
-	return time.Now().Location()
+	return time.Now().In(srv.timezoneProvider.UserTimezone(uid)).Format(localDateFormat)
 }

@@ -40,14 +40,17 @@ func NewHTTPServer(db *sql.DB) *http.Server {
 	userRepo := users.NewUserSQLiteRepo(db)
 	tokenRepo := token.NewTokenSQLiteRepo(db)
 	sessionRepo := sessions.NewSessionSQLiteRepo(db)
+	settingsStore := users.NewUserSettingsSQLiteRepo(db)
 
 	authService := auth.NewAuthService(userRepo, tokenRepo)
-	sessionService := sessions.NewSessionService(sessionRepo)
+	settingsService := users.NewSettingsService(settingsStore)
+	sessionService := sessions.NewSessionService(sessionRepo, settingsService)
 
 	app := &application{
-		appStats:       ApplicationStatus{startTime: time.Now()},
-		authService:    authService,
-		sessionService: sessionService,
+		appStats:        ApplicationStatus{startTime: time.Now()},
+		authService:     authService,
+		sessionService:  sessionService,
+		settingsService: settingsService,
 	}
 
 	return &http.Server{

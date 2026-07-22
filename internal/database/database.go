@@ -13,7 +13,7 @@ import (
 var MaxOpenCons = 5
 
 func GetDatabaseConnection() (*sql.DB, error) {
-	db, err := sql.Open("sqlite", os.Getenv("DB_PATH"))
+	db, err := sql.Open("sqlite", os.Getenv("DB_PATH")+"?_pragma=foreign_keys(1)")
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}

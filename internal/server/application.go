@@ -34,10 +34,15 @@ type SessionService interface {
 	RecordActiveSession(uid int64, req *api.RecordActiveSessionReq) (*sessions.ActiveSession, error)
 }
 
+type UserSettingsService interface {
+	InitializeSettings(uid int64, timezone string) error
+}
+
 type application struct {
-	appStats       ApplicationStatus
-	authService    AuthService
-	sessionService SessionService
+	appStats        ApplicationStatus
+	authService     AuthService
+	sessionService  SessionService
+	settingsService UserSettingsService
 }
 
 type ApplicationStatus struct {
@@ -78,7 +83,7 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, authToken, err := app.authService.RegisterUser(userdata.Username, userdata.Password)
+	user, authToken, err := app.authService.RegisterUser(userdata.Username, userdata.Password)
 
 	if errors.Is(err, users.ErrUserExists) {
 		writeError(w, http.StatusConflict, "username is taken")
@@ -87,6 +92,13 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Printf("registration error: %v", err)
+		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
+		return
+	}
+
+	// TODO: get the user's timezone in the request body
+	err = app.settingsService.InitializeSettings(user.UID, "EET")
+	if err != nil {
 		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
 		return
 	}

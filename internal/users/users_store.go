@@ -17,7 +17,7 @@ func NewUserSQLiteRepo(db *sql.DB) *UserSQLiteRepo {
 }
 
 func (r *UserSQLiteRepo) Create(u *User) (*User, error) {
-	result, err := r.db.Exec("INSERT INTO "+UsersTable+" (username, password_hash, created_at) VALUES (?, ?, ?)", u.Username, u.PasswordHash, time.Now())
+	result, err := r.db.Exec("INSERT INTO "+UsersTable+" (username, password_hash, created_at) VALUES (?, ?, ?)", u.Username, u.PasswordHash, time.Now().In(time.UTC))
 	if err != nil {
 		if isUniqueViolation(err) {
 			return nil, fmt.Errorf("create user %q: %w", u.Username, ErrUserExists)

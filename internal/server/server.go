@@ -3,7 +3,9 @@ package server
 
 import (
 	"database/sql"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/5fives-to-go/internal/auth"
@@ -23,7 +25,7 @@ func NewMux(app *application) *http.ServeMux {
 
 	mux.HandleFunc("GET /health", app.serverHealthHandler)
 	mux.HandleFunc("POST /api/register", app.registerUser)
-	mux.HandleFunc("POST /api/login", app.loginUser)
+	mux.Handle("POST /api/login", app.withLogger(http.HandlerFunc(app.loginUser)))
 	mux.Handle("POST /api/logout", app.requireAuth(http.HandlerFunc(app.logoutUser)))
 	// mux.Handle("GET /api/sessions/all", app.requireAuth(http.HandlerFunc(app.allUserSessions)))
 	mux.Handle("GET /api/sessions", app.requireAuth(http.HandlerFunc(app.completedUserSessions)))
@@ -46,11 +48,14 @@ func NewHTTPServer(db *sql.DB) *http.Server {
 	settingsService := users.NewSettingsService(settingsStore)
 	sessionService := sessions.NewSessionService(sessionRepo, settingsService)
 
+	l := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
 	app := &application{
 		appStats:        ApplicationStatus{startTime: time.Now()},
 		authService:     authService,
 		sessionService:  sessionService,
 		settingsService: settingsService,
+		appLogger:       l,
 	}
 
 	return &http.Server{

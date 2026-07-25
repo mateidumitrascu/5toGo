@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"sync/atomic"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/5fives-to-go/internal/api"
 	"github.com/5fives-to-go/internal/auth"
+	"github.com/5fives-to-go/internal/logging"
 	"github.com/5fives-to-go/internal/sessions"
 	"github.com/5fives-to-go/internal/token"
 	"github.com/5fives-to-go/internal/users"
@@ -19,7 +22,7 @@ import (
 
 type AuthService interface {
 	RegisterUser(username string, password string) (*users.User, string, error)
-	LoginUser(username string, password string) (*users.User, string, error)
+	LoginUser(ctx context.Context, username string, password string) (*users.User, string, error)
 	CheckToken(t string) (*token.AuthToken, error)
 	LogoutUser(t string) error
 }
@@ -43,6 +46,7 @@ type application struct {
 	authService     AuthService
 	sessionService  SessionService
 	settingsService UserSettingsService
+	appLogger       *slog.Logger
 }
 
 type ApplicationStatus struct {
@@ -116,10 +120,12 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
+	l := logging.FromContext(r.Context())
 	var userdata api.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&userdata)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request structure")
+		l.Error("invalid request structure")
 		return
 	}
 
@@ -128,25 +134,27 @@ func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, authToken, err := app.authService.LoginUser(userdata.Username, userdata.Password)
+	_, authToken, err := app.authService.LoginUser(r.Context(), userdata.Username, userdata.Password)
 
 	if errors.Is(err, auth.ErrInvalidCredentials) {
+		l.Warn("failed auth attempt", "username", userdata.Username)
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
 	if err != nil {
-		log.Printf("error logging user in: %v", err)
+		l.Error("login error", "error", err.Error())
 		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
 		return
 	}
 
 	if authToken == "" {
+		l.Error("error generating auth token")
 		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
 		return
 	}
 
-	fmt.Printf("user %s logged in\n", user.Username)
+	l.Info("user logged in", "username", userdata.Username)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 

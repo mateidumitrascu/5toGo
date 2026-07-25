@@ -3,9 +3,11 @@ package server
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
+	"github.com/5fives-to-go/internal/logging"
 	"github.com/5fives-to-go/internal/token"
 )
 
@@ -42,6 +44,21 @@ func (app *application) requireAuth(next http.Handler) http.Handler {
 		}
 		ctx := context.WithValue(r.Context(), userIDKey, authToken.UID)
 		ctx = context.WithValue(ctx, tokenHashKey, token.HashToken(t))
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (app *application) withLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		childLogger := app.appLogger.With(
+			slog.Group("http_request",
+				slog.String("host", r.Host),
+				slog.String("method", r.Method),
+				slog.String("endpoint", r.Pattern),
+				slog.String("remote_addr", r.RemoteAddr),
+			))
+		ctx := logging.WithLogger(r.Context(), childLogger)
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

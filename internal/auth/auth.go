@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -52,7 +53,7 @@ func (sv *AuthService) RegisterUser(username string, password string) (*users.Us
 	return user, tokenValue, nil
 }
 
-func (sv *AuthService) LoginUser(username string, password string) (*users.User, string, error) {
+func (sv *AuthService) LoginUser(ctx context.Context, username string, password string) (*users.User, string, error) {
 	user, err := sv.userStore.FindByUsername(username)
 
 	if errors.Is(err, users.ErrUserNotFound) {

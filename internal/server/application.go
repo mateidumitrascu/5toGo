@@ -75,6 +75,8 @@ func (app *application) connState(conn net.Conn, state http.ConnState) {
 
 // Users handlers
 func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
+	l := logging.FromContext(r.Context())
+
 	var userdata api.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&userdata)
 	if err != nil {
@@ -90,28 +92,23 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	user, authToken, err := app.authService.RegisterUser(userdata.Username, userdata.Password)
 
 	if errors.Is(err, users.ErrUserExists) {
+		l.Warn("attempted existing username registration", "username", userdata.Username)
 		writeError(w, http.StatusConflict, "username is taken")
 		return
 	}
 
 	if err != nil {
-		log.Printf("registration error: %v", err)
+		l.Error("registration error", "error", err)
 		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
 		return
 	}
 
-	// TODO: get the user's timezone in the request body
-	err = app.settingsService.InitializeSettings(user.UID, "EET")
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
-		return
+	// TODO: get the user's timezone from the request body
+	if err := app.settingsService.InitializeSettings(user.UID, "EET"); err != nil {
+		l.Warn("failed to initialize user settings", "username", user.Username, "error", err)
 	}
 
-	if authToken == "" {
-		writeError(w, http.StatusInternalServerError, "there was an error processing your request")
-		return
-	}
-
+	l.Info("user succesfully registered", "username", userdata.Username)
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
@@ -163,12 +160,17 @@ func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) logoutUser(w http.ResponseWriter, r *http.Request) {
+	l := logging.FromContext(r.Context())
 	tokenHash := r.Context().Value(tokenHashKey).(string)
+	uid := r.Context().Value(userIDKey).(int64)
+
 	err := app.authService.LogoutUser(tokenHash)
 	if err != nil {
+		l.Error("logout error", "error", err)
 		writeError(w, http.StatusInternalServerError, "there was an error logging out, try again later")
 		return
 	}
+	l.Info("user logged out", "uid", uid)
 	w.WriteHeader(http.StatusNoContent)
 }
 

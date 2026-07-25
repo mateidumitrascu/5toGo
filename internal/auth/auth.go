@@ -47,7 +47,7 @@ func (sv *AuthService) RegisterUser(username string, password string) (*users.Us
 	tokenValue := token.GenerateToken()
 	_, err = sv.tokenStore.Create(token.NewAuthToken(token.HashToken(tokenValue), user.UID, time.Now().AddDate(0, 0, 10)))
 	if err != nil {
-		return user, "", nil
+		return user, "", fmt.Errorf("error creating token: %w", err)
 	}
 
 	return user, tokenValue, nil

@@ -24,9 +24,9 @@ func NewMux(app *application) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", app.serverHealthHandler)
-	mux.HandleFunc("POST /api/register", app.registerUser)
+	mux.Handle("POST /api/register", app.withLogger(http.HandlerFunc(app.registerUser)))
 	mux.Handle("POST /api/login", app.withLogger(http.HandlerFunc(app.loginUser)))
-	mux.Handle("POST /api/logout", app.requireAuth(http.HandlerFunc(app.logoutUser)))
+	mux.Handle("POST /api/logout", app.withLogger(app.requireAuth(http.HandlerFunc(app.logoutUser))))
 	// mux.Handle("GET /api/sessions/all", app.requireAuth(http.HandlerFunc(app.allUserSessions)))
 	mux.Handle("GET /api/sessions", app.requireAuth(http.HandlerFunc(app.completedUserSessions)))
 	mux.Handle("POST /api/sessions", app.requireAuth(http.HandlerFunc(app.recordCompletedSession)))
